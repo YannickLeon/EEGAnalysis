@@ -55,5 +55,5 @@ for sub in range(1, 16):
     angles.append(res)
 
 angles_flat = np.concatenate(angles)
-bins = create_bins(angles_flat = np.concatenate(angles))
+bins = create_bins(angles_flat)
 plt.bar(range(8), [len(bin) for bin in bins])
