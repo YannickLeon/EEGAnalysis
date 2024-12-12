@@ -14,7 +14,7 @@ def filter_for_behavior(df, data, behavior, sampling_rate=500, window=100):
     filtered_df = df[df['trial_type'] == behavior]
     onset_times = filtered_df['onset'].values
     eeg_data_points = (onset_times * sampling_rate).astype(int)
-    extracted_data = np.array([data[idx:idx + window] for idx in eeg_data_points if idx + window <= len(data)])
+    extracted_data = np.array([data[idx-window:idx + window] for idx in eeg_data_points if idx + window <= len(data)])
     return extracted_data
 
 def create_bins(data, num_bins=8):
@@ -49,8 +49,8 @@ for sub in range(1, 16):
 
     df = pd.read_csv(f'data\\sub-{subject_id}\\eeg\\sub-{subject_id}_task-ContinuousVideoGamePlay_run-02_events.tsv', sep='\t')
     # for i in range(0, 65):
-    i = 12
-    res = filter_for_behavior(df, test[i], "COLLECT_AMMO")
+    i = 10
+    res = filter_for_behavior(df, test[i], "PLAYER_CRASH_WALL", window=500)
     res = res.flatten()
     angles.append(res)
 
