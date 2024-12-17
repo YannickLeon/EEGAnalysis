@@ -14,7 +14,7 @@ def filter_for_behavior(df, data, behavior, sampling_rate=500, window=100):
     filtered_df = df[df['trial_type'] == behavior]
     onset_times = filtered_df['onset'].values
     eeg_data_points = (onset_times * sampling_rate).astype(int)
-    extracted_data = np.array([data[idx-window:idx + window] for idx in eeg_data_points if idx + window <= len(data)])
+    extracted_data = np.array([data[idx - window:idx + window] for idx in eeg_data_points if idx + window <= len(data)])
     return extracted_data
 
 def create_bins(data, num_bins=8):
