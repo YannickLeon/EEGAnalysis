@@ -13,46 +13,56 @@ import matplotlib.cm as cm
 import scipy.stats as stats
 from utils import *
 from tqdm import tqdm
-import torch
 import time
 
-def run(data, combinations, baselines, sampling_rate, window, num_bins):
-        for combination in tqdm(combinations):
-            process_combination(combination, data, baselines, sampling_rate, window, num_bins)
+def run(data, combinations, sampling_rate, window, num_bins):
+    peak_to_troughs = {}
+    for behavior in Behaviour:
+        peak_to_troughs[behavior] = {}
+    for combination in tqdm(combinations):
+        channel, behaviour = combination
+        peak_to_trough_raw, peak_to_trough_ica = process_combination(combination, data, sampling_rate, window, num_bins)
+        peak_to_troughs[behaviour][channel] = (peak_to_trough_raw, peak_to_trough_ica)
+    return peak_to_troughs
 
-def process_combination(combination, data, baselines, sampling_rate, window, num_bins):
+def process_combination(combination, data, sampling_rate, window, num_bins):
     channel, behavior = combination
     behavior_str = behavior.value if isinstance(behavior, Behaviour) else behavior
-    results = get_deviations_for_subjects(data, data.keys(), channel, behavior_str, baselines, sampling_rate, window, num_bins)
+    results = get_deviations_for_subjects(data, data.keys(), channel, behavior_str, sampling_rate, window, num_bins)
     aggregated_raw, not_aggregated_raw = results[0]
     aggregated_ica, not_aggregated_ica = results[1]
-    plot_all(aggregated_raw, not_aggregated_raw, f"../Results/{channel}/{behavior_str}_raw")
-    plot_all(aggregated_ica, not_aggregated_ica, f"../Results/{channel}/{behavior_str}_ica")
+    #plot_all(aggregated_raw, not_aggregated_raw, f"../Results/{channel}/{behavior_str}_raw")
+    #plot_all(aggregated_ica, not_aggregated_ica, f"../Results/{channel}/{behavior_str}_ica")
+    peak_to_trough_raw = calculate_peak_to_trough(aggregated_raw)
+    peak_to_trough_ica = calculate_peak_to_trough(aggregated_ica)
+    return peak_to_trough_raw, peak_to_trough_ica
 
-def get_deviations_for_subjects(data, subjects, channel, behavior, baselines, sampling_rate, window, num_bins):
+def get_deviations_for_subjects(data, subjects, channel, behavior, sampling_rate, window, num_bins):
     results = []
     for i in range(2):
-        method_count = len(baselines)
-        deviation_aggregated = np.zeros((method_count, num_bins))
-        count = np.zeros(method_count)
-        deviations = [[] for _ in range(method_count)]
+        count = {}
+        deviations = {}
+        deviation_aggregated = {}
+        for baseline in Baseline:
+            deviations[baseline] = []
+            deviation_aggregated[baseline] = np.zeros(num_bins)
+            count[baseline] = 0
 
         for subject in subjects:
             angles, events = data[subject]
             angles = angles[i]
             filtered_events = events[events["trial_type"] == behavior]
             data_of_channel = angles[range(channel, channel+1)]
-            for method_idx, method in enumerate(baselines):
-                curr_deviation = get_total_deviation(data_of_channel, [entry for entry in filtered_events["onset"]], method, sampling_rate=sampling_rate, timespan=window, num_bins=num_bins)
+            for baseline in Baseline:
+                curr_deviation = get_total_deviation(data_of_channel, [entry for entry in filtered_events["onset"]], baseline, sampling_rate=sampling_rate, timespan=window, num_bins=num_bins)
                 curr_deviation = np.array(curr_deviation)
-                deviations[method_idx].append(curr_deviation)
+                deviations[baseline].append(curr_deviation)
                 weight = len(filtered_events)
-                deviation_aggregated[method_idx] += curr_deviation * weight
-                count[method_idx] += weight
+                deviation_aggregated[baseline] += curr_deviation * weight
+                count[baseline] += weight
 
-        for j in range(method_count):
-            deviation_aggregated[j] /= count[j]
-        deviations = [np.array(method_devs) for method_devs in deviations]
+        for baseline in Baseline:
+            deviation_aggregated[baseline] /= count[baseline]
         results.append((deviation_aggregated, deviations))
     return results
     
@@ -68,15 +78,15 @@ def get_total_deviation(data, timestamps, baseline_method, timespan = 1, samplin
     return total_deviation
 
 def get_bin_deviation(data, timestamps, baseline_method, timespan = 1 * 500, num_bins = 8):
-    if baseline_method == "exclude_event":
+    if baseline_method == Baseline.EXCLUDED:
         base_data = list(data[0:int(timestamps[0]-timespan/2)])
         for i in range(len(timestamps)-1):
             base_data.extend(data[int((timestamps[i]+timespan/2)):int((timestamps[i+1]-timespan/2))])
         base_data.extend(data[int((timestamps[len(timestamps)-1]+timespan/2)):len(data)])
-    if baseline_method == "include_event":
+    if baseline_method == Baseline.INCLUDED:
         base_data = data
 
-    if baseline_method == "naive":
+    if baseline_method == Baseline.NAIVE:
         default = [0.125]*8
     else:
         bins = create_bins(base_data, num_bins)
@@ -106,3 +116,11 @@ def get_bin_probabilities(bins):
     bin_sizes = np.array([len(bin) for bin in bins])
     total_size = np.sum(bin_sizes)
     return bin_sizes / total_size
+
+def calculate_peak_to_trough(bins):
+    differences = []
+    for bin in bins.values():
+        min = np.min(bin)
+        max = np.max(bin)
+        differences.append(max - min)
+    return differences

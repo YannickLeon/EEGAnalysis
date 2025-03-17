@@ -22,6 +22,11 @@ class Behaviour(Enum):
     PLAYER_CRASH_WALL = "PLAYER_CRASH_WALL"
     COLLECT_AMMO = "COLLECT_AMMO"
 
+class Baseline(Enum):
+    EXCLUDED = "EXCLUDED"
+    INCLUDED = "INCLUDED"
+    NAIVE = "NAIVE"
+
 def plot_seperated(aggregated, not_aggregated, filename, title):
     plt.figure()
     plt.title(title)
@@ -32,19 +37,19 @@ def plot_seperated(aggregated, not_aggregated, filename, title):
     plt.savefig(filename)
     plt.close()
 
-def plot_aggregated(aggregated, filename, title, labels=None, confidence_intervals=None):
+def plot_aggregated(aggregated, filename, title, labels=None, confidence_interval=None):
     plt.figure()
     plt.title(title)
     color_map = cm.get_cmap('tab10', len(aggregated))
-    for i in range(len(aggregated)):
-        x_vals = np.arange(len(aggregated[i]))
+    for i, baseline in enumerate(aggregated):
+        x_vals = np.arange(len(aggregated[baseline]))
         color = color_map(i)
         if labels is None:
-            plt.plot(x_vals, aggregated[i], color=color)
+            plt.plot(x_vals, aggregated[baseline], color=color)
         else:
-            plt.plot(x_vals, aggregated[i], color=color, label=labels[i])
-        if confidence_intervals is not None:
-            lower, upper = confidence_intervals[i]
+            plt.plot(x_vals, aggregated[baseline], color=color, label=labels[i])
+        if confidence_interval is not None:
+            lower, upper = confidence_interval
             plt.fill_between(x_vals, lower, upper, color=color, alpha=0.2)
     if labels is not None:
         plt.legend()
@@ -53,15 +58,15 @@ def plot_aggregated(aggregated, filename, title, labels=None, confidence_interva
 
 def plot_all(aggregated, not_aggregated, folder_path):
     def confidence(baseline):
-        return [get_confidence_intervals(not_aggregated[baseline], confidence=0.95)]
+        return get_confidence_intervals(not_aggregated[baseline], confidence=0.95)
     os.makedirs(folder_path, exist_ok=True)
-    plot_seperated(aggregated[0], not_aggregated[0], folder_path + "/seperated_excluded.png", "Seperated subjects, excluded baseline")
-    plot_seperated(aggregated[1], not_aggregated[1], folder_path + "/seperated_included.png", "Seperated subjects, included baseline")
-    plot_seperated(aggregated[2], not_aggregated[2], folder_path + "/seperated_naive.png", "Seperated subjects, naive baseline")
+    plot_seperated(aggregated[Baseline.EXCLUDED], not_aggregated[Baseline.EXCLUDED], folder_path + "/seperated_excluded.png", "Seperated subjects, excluded baseline")
+    plot_seperated(aggregated[Baseline.INCLUDED], not_aggregated[Baseline.INCLUDED], folder_path + "/seperated_included.png", "Seperated subjects, included baseline")
+    plot_seperated(aggregated[Baseline.NAIVE], not_aggregated[Baseline.NAIVE], folder_path + "/seperated_naive.png", "Seperated subjects, naive baseline")
     plot_aggregated(aggregated, folder_path + "/aggregated.png", "Aggegrated subjects with 3 different baselines", labels=["Excluded", "Included", "Naive"])
-    plot_aggregated([aggregated[0]], folder_path + "/aggregated_excluded.png", "Aggregated subjects, excluded baseline", confidence_intervals=confidence(0))
-    plot_aggregated([aggregated[1]], folder_path + "/aggregated_included.png", "Aggregated subjects, included baseline", confidence_intervals=confidence(1))
-    plot_aggregated([aggregated[2]], folder_path + "/aggregated_naive.png", "Aggregated subjects, naive baseline", confidence_intervals=confidence(2))
+    plot_aggregated({Baseline.EXCLUDED: aggregated[Baseline.EXCLUDED]}, folder_path + "/aggregated_excluded.png", "Aggregated subjects, excluded baseline", confidence_interval=confidence(Baseline.EXCLUDED))
+    plot_aggregated({Baseline.INCLUDED: aggregated[Baseline.INCLUDED]}, folder_path + "/aggregated_included.png", "Aggregated subjects, included baseline", confidence_interval=confidence(Baseline.INCLUDED))
+    plot_aggregated({Baseline.NAIVE: aggregated[Baseline.NAIVE]}, folder_path + "/aggregated_naive.png", "Aggregated subjects, naive baseline", confidence_interval=confidence(Baseline.NAIVE))
 
 def get_confidence_intervals(data, confidence):
     n = len(data)
