@@ -118,6 +118,7 @@ def get_bin_probabilities(bins):
     return bin_sizes / total_size
 
 def calculate_peak_to_trough(bins):
+    #TODO CHANGE TO DICT
     differences = []
     for bin in bins.values():
         min = np.min(bin)
