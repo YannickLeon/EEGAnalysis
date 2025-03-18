@@ -29,6 +29,7 @@ class Preprocessing:
             data[subject] = (angles, events)
         return data
 
+
     def load_channel(self, channel):
         cache_file = os.path.join(self.cache_path, f"{str(channel).zfill(3)}_data.pkl")
 
@@ -37,11 +38,19 @@ class Preprocessing:
             with open(cache_file, "rb") as f:
                 return pickle.load(f)
         
-        # bischen reudig aber egal
-        return self.prepare_channels()[channel]
-        
 
     def prepare_channels(self):
+        # Check if data is cached
+        missing = False
+        for i in range(65):
+            cache_file = os.path.join(self.cache_path, f"{str(i).zfill(3)}_data.pkl")
+            if not os.path.exists(cache_file):
+                missing = True
+                break
+        if not missing:
+            return
+
+        # If data is not cached:
         data = {}
         for i in range(65):
             data[i] = {}
@@ -59,7 +68,6 @@ class Preprocessing:
                 continue
             with open(cache_file, "wb") as f:
                 pickle.dump(data[i], f)
-        return data
 
 
     def load_subject(self, subject):
