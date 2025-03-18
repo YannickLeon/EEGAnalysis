@@ -13,14 +13,22 @@ import matplotlib.cm as cm
 import scipy.stats as stats
 from utils import *
 from tqdm import tqdm
-import time
+from Preprocessing import Preprocessing
 
-def run(data, combinations, sampling_rate, window, num_bins):
+def run(combinations, sampling_rate=500, window=1, num_bins=8):
+    prev_channel = -1
+    data = {}
+    bids_root = "../data/"
+    preprocessing = Preprocessing(bids_root, "cache")
+
     peak_to_troughs = {}
     for behavior in Behaviour:
         peak_to_troughs[behavior] = {}
     for combination in tqdm(combinations):
         channel, behaviour = combination
+        # load data for next channel
+        if channel != prev_channel:
+            data = preprocessing.load_channel(channel)
         peak_to_trough_raw, peak_to_trough_ica = process_combination(combination, data, sampling_rate, window, num_bins)
         peak_to_troughs[behaviour][channel] = (peak_to_trough_raw, peak_to_trough_ica)
     return peak_to_troughs
@@ -31,8 +39,8 @@ def process_combination(combination, data, sampling_rate, window, num_bins):
     results = get_deviations_for_subjects(data, data.keys(), channel, behavior_str, sampling_rate, window, num_bins)
     aggregated_raw, not_aggregated_raw = results[0]
     aggregated_ica, not_aggregated_ica = results[1]
-    #plot_all(aggregated_raw, not_aggregated_raw, f"../Results/{channel}/{behavior_str}_raw")
-    #plot_all(aggregated_ica, not_aggregated_ica, f"../Results/{channel}/{behavior_str}_ica")
+    plot_all(aggregated_raw, not_aggregated_raw, f"../Results/{channel}/{behavior_str}_raw")
+    plot_all(aggregated_ica, not_aggregated_ica, f"../Results/{channel}/{behavior_str}_ica")
     peak_to_trough_raw = calculate_peak_to_trough(aggregated_raw)
     peak_to_trough_ica = calculate_peak_to_trough(aggregated_ica)
     return peak_to_trough_raw, peak_to_trough_ica
@@ -52,9 +60,9 @@ def get_deviations_for_subjects(data, subjects, channel, behavior, sampling_rate
             angles, events = data[subject]
             angles = angles[i]
             filtered_events = events[events["trial_type"] == behavior]
-            data_of_channel = angles[range(channel, channel+1)]
             for baseline in Baseline:
-                curr_deviation = get_total_deviation(data_of_channel, [entry for entry in filtered_events["onset"]], baseline, sampling_rate=sampling_rate, timespan=window, num_bins=num_bins)
+                # angles is passed as an array because deviation supports multiple channels
+                curr_deviation = get_total_deviation([angles], [entry for entry in filtered_events["onset"]], baseline, sampling_rate=sampling_rate, timespan=window, num_bins=num_bins)
                 curr_deviation = np.array(curr_deviation)
                 deviations[baseline].append(curr_deviation)
                 weight = len(filtered_events)

@@ -19,6 +19,7 @@ class Preprocessing:
         self.cache_path = cache_path
         os.makedirs(cache_path, exist_ok=True) 
 
+    # store data for each channel: dict{channel, dict{subject, tuple(angles, events)}}
     def load_all_subjects(self):
         data = {}
         for i in range(1, 18):
@@ -27,6 +28,39 @@ class Preprocessing:
             events = self.load_events(subject)
             data[subject] = (angles, events)
         return data
+
+    def load_channel(self, channel):
+        cache_file = os.path.join(self.cache_path, f"{str(channel).zfill(3)}_data.pkl")
+
+        # Load from cache if available
+        if os.path.exists(cache_file):
+            with open(cache_file, "rb") as f:
+                return pickle.load(f)
+        
+        # bischen reudig aber egal
+        return self.prepare_channels()[channel]
+        
+
+    def prepare_channels(self):
+        data = {}
+        for i in range(65):
+            data[i] = {}
+            
+        for s in range(1,18):
+            subject = str(s).zfill(3)
+            angles = self.load_subject(subject)
+            events = self.load_events(subject)
+            for i in range(len(angles[0])):
+                data[i][subject] = ([angles[0][i], angles[1][i]], events)
+                
+        for i in range(len(data)):
+            cache_file = os.path.join(self.cache_path, f"{str(i).zfill(3)}_data.pkl")
+            if os.path.exists(cache_file):
+                continue
+            with open(cache_file, "wb") as f:
+                pickle.dump(data[i], f)
+        return data
+
 
     def load_subject(self, subject):
         cache_file = os.path.join(self.cache_path, f"{subject}_angles.pkl")
