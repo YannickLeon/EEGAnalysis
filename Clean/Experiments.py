@@ -68,7 +68,7 @@ def get_deviations_for_subjects(data, subjects, behavior, sampling_rate, window,
             angles = angles[i]
             filtered_events = events[events["trial_type"] == behavior]
             for baseline in Baseline:
-                curr_deviation = get_bin_deviation(angles, [entry for entry in filtered_events["onset"]], baseline, timespan=window*sampling_rate, num_bins=num_bins)
+                curr_deviation = get_bin_deviation(angles, [entry*sampling_rate for entry in filtered_events["onset"]], baseline, timespan=window*sampling_rate, num_bins=num_bins)
                 curr_deviation = np.array(curr_deviation)
                 deviations[baseline].append(curr_deviation)
                 weight = len(filtered_events)
@@ -86,15 +86,15 @@ def get_bin_deviation(data, timestamps, baseline_method, timespan = 1, num_bins 
     get bin distribution for selected baseline and compare to event-specific distribution
     return: deviation for each bin
     """
-    if baseline_method == Baseline.EXCLUDED:
-        base_data = list(data[0:int(timestamps[0]-timespan/2)])
+    if baseline_method == Baseline.EXCLUDED:    # include all data but event neighbourhoods
+        base_data = list(data[0:int(timestamps[0]-timespan/2)]) # add all data until first event
         for i in range(len(timestamps)-1):
-            base_data.extend(data[int((timestamps[i]+timespan/2)):int((timestamps[i+1]-timespan/2))])
-        base_data.extend(data[int((timestamps[len(timestamps)-1]+timespan/2)):len(data)])
-    if baseline_method == Baseline.INCLUDED:
+            base_data.extend(data[int((timestamps[i]+timespan/2)):int((timestamps[i+1]-timespan/2))])   # add data between events
+        base_data.extend(data[int((timestamps[len(timestamps)-1]+timespan/2)):len(data)])   # add data after last event
+    if baseline_method == Baseline.INCLUDED:    # include all data
         base_data = data
 
-    if baseline_method == Baseline.NAIVE:
+    if baseline_method == Baseline.NAIVE:       # assume evenly distributed data
         default = [0.125]*8
     else:
         bins = create_bins(base_data, num_bins)
