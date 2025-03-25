@@ -125,11 +125,11 @@ def get_bin_probabilities(bins):
     total_size = np.sum(bin_sizes)
     return bin_sizes / total_size
 
-def calculate_peak_to_trough(bins):
-    #TODO CHANGE TO DICT
-    differences = []
-    for bin in bins.values():
+def calculate_peak_to_trough(bins_by_baseline):
+    print(bins_by_baseline)
+    differences = {Baseline.EXCLUDED: None, Baseline.INCLUDED: None, Baseline.NAIVE: None}
+    for key, bin in bins_by_baseline:
         min = np.min(bin)
         max = np.max(bin)
-        differences.append(max - min)
+        differences[key] = max - min
     return differences
