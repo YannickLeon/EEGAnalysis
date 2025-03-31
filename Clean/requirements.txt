@@ -1,0 +1,7 @@
+numpy==1.21.5
+matplotlib==3.10.0
+scipy==1.14.1
+mne_bids==0.16.0
+mne==1.8.0
+tqdm==4.66.4
+pandas==2.2.3

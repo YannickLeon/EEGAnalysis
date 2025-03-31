@@ -1,16 +1,9 @@
 import os
 from mne_bids import (BIDSPath,read_raw_bids)
-import mne_bids
 import mne
-import importlib
 import ccs_eeg_utils
-from IPython.display import clear_output
 import numpy as np
-from matplotlib import pyplot as plt
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import scipy.stats as stats
 import pickle
 
 class Preprocessing:

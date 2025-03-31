@@ -2,7 +2,6 @@
 import os
 from mne_bids.read import _from_tsv,_drop
 from mne_bids import (BIDSPath,read_raw_bids)
-import mne_bids
 import mne
 import numpy as np
 
