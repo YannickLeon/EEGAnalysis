@@ -3,12 +3,10 @@ from utils import *
 from tqdm import tqdm
 from Preprocessing import Preprocessing
 
-def run(combinations, sampling_rate=500, window=1, num_bins=8):
+def run(combinations, preprocessing: Preprocessing, sampling_rate=500, window=1, num_bins=8):
     """loads data for current channel and initiates processing"""
     prev_channel = -1
     data = {}
-    bids_root = "../data/"
-    preprocessing = Preprocessing(bids_root, "cache")
 
     peak_to_troughs = {}
     for behavior in Behaviour:
